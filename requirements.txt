@@ -1,0 +1,5 @@
+scikit-learn==1.9.1
+mlflow==3.17.2
+Flask
+streamlit==1.67.0
+skops==0.16.0

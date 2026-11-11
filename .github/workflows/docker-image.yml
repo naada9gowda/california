@@ -1,0 +1,50 @@
+name: Build and validate Docker image
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --tag california-housing-ui:${{ github.sha }} .
+
+      - name: Start container and verify the app
+        env:
+          IMAGE_TAG: california-housing-ui:${{ github.sha }}
+        run: |
+          docker run --detach --name california-housing-ui-smoke --publish 8501:8501 "$IMAGE_TAG"
+
+          ready=false
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8501/_stcore/health; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" != true ]; then
+            docker logs california-housing-ui-smoke
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:8501/ > /dev/null
+
+      - name: Validate bundled model prediction
+        run: |
+          docker exec california-housing-ui-smoke python -c "import math, mlflow.sklearn; model = mlflow.sklearn.load_model('/app/model'); predictions = model.predict([[5.0, 20.0, 5.0, 1.0, 1000.0, 3.0, 36.0, -120.0]]); assert len(predictions) == 1 and math.isfinite(float(predictions[0]))"
+
+      - name: Stop smoke-test container
+        if: always()
+        run: docker rm --force california-housing-ui-smoke || true

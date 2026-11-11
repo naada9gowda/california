@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+__pycache__
+*.py[cod]
+*.db
+mlruns/
+.venv/
+venv/
+README.md
+app.py
+california_housing.py
+compose.yaml
+track_california_housing.py
