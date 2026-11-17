@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: naadaby/california-housing
+  IMAGE_NAME: naadaby/california
 
 jobs:
   build-test-publish:
